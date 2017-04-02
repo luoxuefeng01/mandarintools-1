@@ -1,5 +1,6 @@
 package io.github.weiweiwang;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,8 @@ public class ChineseNumbers {
     private static final Map<Character, Integer> DIGITS_MAP = new HashMap<>();
     private static final Pattern DIGITS_PATTERN;
     private static final Pattern ENGLISH_DECIMAL_PATTERN = Pattern.compile("([0-9]*)\\.([0-9]+)");
+    private static final Pattern ENGLISH_FRACTION_PATTERN = Pattern.compile("([0-9]*)/([0-9]+)");
+
     private static final String[] BEFORE_WAN_DIGITS = {"十", "百", "千"};
     private static final Map<String, Integer> BEFORE_WAN_DIGITS_MAP = new HashMap<>();
 
@@ -29,8 +32,9 @@ public class ChineseNumbers {
 
     private static final Map<String, String> TRADITIONAL_TO_PINYIN_MAP = new HashMap<>();
 
-    public static final String MINUS = "负";
-    public static final String DECIMAL = "点";
+    private static final String MINUS = "负";
+    private static final String DECIMAL = "点";
+    private static final String FRACTION = "分之";
 //    public static final String ALTTWO = "兩";
 
 
@@ -177,26 +181,67 @@ public class ChineseNumbers {
         TRADITIONAL_TO_SIMPLE_MAP.put("點", "点");
     }
 
+    /**
+     * 将英文表示的数字转化为中文表示的数字，支持负数、小数、不支持分数
+     *
+     * @param text 英文表示的数字，比如：2009000，5.3，-5.3
+     * @return
+     */
     public static String englishNumberToChinese(String text) {
+        if (StringUtils.isEmpty(text)) {
+            throw new IllegalArgumentException("empty input");
+        }
         boolean negative = false;
-        boolean canAddZero = false;
-        boolean inZero = false;
-        double number = Double.parseDouble(text);
-        int power = 0;
-        String remainder = "";
-        if (number == 0) {
+        if (text.length() == 1 && text.charAt(0) == '0') {
             return DIGITS[0];
         }
-        if (number < 0) {
+        if (text.charAt(0) == '-') {
             negative = true;
-            number = -number;
+            text = text.substring(1);
         }
         Matcher m = ENGLISH_DECIMAL_PATTERN.matcher(text);
+        String result;
         if (m.find()) {
-            number = Double.parseDouble(m.group(1));
-            remainder = m.group(2);
+            result = englishNumberToChineseFull(m.group(1)) + DECIMAL + englishNumberToChineseBrief(m.group(2));
+        } else {
+            m = ENGLISH_FRACTION_PATTERN.matcher(text);
+            if (m.find()) {
+                result = englishNumberToChineseFull(m.group(2)) + FRACTION + englishNumberToChineseFull(m.group(1));
+            } else {
+                result = englishNumberToChineseFull(text);
+            }
         }
+
+        if (negative) {
+            result = MINUS + result;
+        }
+        return result;
+    }
+
+    /**
+     * 直接映射英文数字为中文数字，对应输入的小数部分如此处理
+     * @param text
+     * @return
+     */
+    private static String englishNumberToChineseBrief(String text) {
+        String result = "";
+        for (int i = 0; i < text.length(); i++) {
+            result += DIGITS[text.charAt(i) - '0'];
+        }
+        return result;
+    }
+
+    /**
+     * 非输入的小数部分需要做更复杂的转换
+     * @param text
+     * @return
+     */
+    private static String englishNumberToChineseFull(String text) {
+        int power = 0;
+        boolean canAddZero = false;
+        boolean inZero = false;
         Map<Integer, Integer> powers = new HashMap<>();
+        long number = Long.parseLong(text);
         while (Math.pow(10, power) <= number) {
             int value = (int) ((number % (Math.pow(10, power + 1))) / (Math.pow(10, power)));
             powers.put(power, value);
@@ -235,27 +280,24 @@ public class ChineseNumbers {
                 }
             }
         }
-        if (!remainder.isEmpty()) {
-            result += DECIMAL;
-            for (int i = 0; i < remainder.length(); i++) {
-                result += DIGITS[remainder.charAt(i) - '0'];
-            }
-        }
-        if (negative) {
-            result = MINUS + result;
-        }
         return result;
     }
 
-
+    /**
+     * @param text 输入中文数字，支持正负数、小数、分数，比如：五千四百九十一万四千七百一十
+     * @return 转化为double的结果
+     */
     public static double chineseNumberToEnglish(String text) {
+        if (StringUtils.isEmpty(text)) {
+            throw new IllegalArgumentException("empty input");
+        }
         double result;
 //        boolean ordinal = false;
 //        if (text.startsWith("第")) {
 //            ordinal = true;
 //        }
-        if (text.contains("分之")) {
-            int idx = text.indexOf("分之");
+        if (text.contains(FRACTION)) {
+            int idx = text.indexOf(FRACTION);
             result = chineseToEnglishFull(text.substring(idx + 2)) / chineseToEnglishFull(text.substring(0, idx));
         } else if (text.length() > 1) {
             if (DIGITS_PATTERN.matcher(text).find()) {
@@ -267,9 +309,13 @@ public class ChineseNumbers {
             result = chineseToEnglishFull(text);
         }
         return result;
-//        return new Result(text, String.valueOf(result), ordinal);
     }
 
+    /**
+     * 输入如果完全匹配中文对应的数字，直接调用此函数映射输出
+     * @param text
+     * @return
+     */
     private static long chineseToEnglishBrief(String text) {
         char[] chars = text.toCharArray();
         long total = 0;
@@ -280,6 +326,11 @@ public class ChineseNumbers {
         return total;
     }
 
+    /**
+     * 对应复杂的中文数字串
+     * @param text
+     * @return
+     */
     private static double chineseToEnglishFull(String text) {
         text = text.replace("万亿", "兆");
         text = text.replace("萬億", "兆");
@@ -312,10 +363,10 @@ public class ChineseNumbers {
         char[] chars = text.toCharArray();
         for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
-            if (i == 0 && (c == '负' || c == '負' || c == '-')) {
+            if (i == 0 && (c == '负' || c == '負' || c == '-')) { // 负数，跳过首字母，记录标记位，剩下部分转化为英文数字
                 negative = true;
                 continue;
-            } else if (i == 0 && c == '第') {
+            } else if (i == 0 && c == '第') { // 序数，跳过首字母，后面部分转化成英文数字
                 continue;
             } else if (c == '點' || c == '点' || c == '.' || c == '．') {
                 afterDecimal = true;

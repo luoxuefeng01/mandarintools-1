@@ -1,7 +1,7 @@
 # 功能说明
 
 ## 中文数字转成英文数字
-支持负数，小数，分数，中文数字可以使用各种大小写形式，具体写法可以参考[DigitsTable]中内容
+支持负数、小数、分数，中文数字可以使用各种大小写形式，具体写法可以参考[对照表](#对照表)中内容
 
 ```
         final double delta = 1e-10;
@@ -17,16 +17,18 @@
 ```
 
 ## 英文数字转中文
-支持负数，小数，不支持分数
+支持负数、小数、分数
 
 ```
         Assert.assertEquals("二百萬九千", ChineseNumbers.englishNumberToChinese("2009000"));
         Assert.assertEquals("五点三", ChineseNumbers.englishNumberToChinese("5.3"));
         Assert.assertEquals("负五点三", ChineseNumbers.englishNumberToChinese("-5.3"));
+        Assert.assertEquals("三分之一", ChineseNumbers.englishNumberToChinese("1/3"));
+        Assert.assertEquals("负三分之一", ChineseNumbers.englishNumberToChinese("-1/3"));
 ```
 
 
-# 对照表 [DigitsTable] #
+# 对照表
 
  |	0 | 	1|	2|	3|	4|	5|	6|	7|	8|	9|	10|	100|	1000|	10000|	100000000
  ---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
@@ -44,7 +46,7 @@ Pinyin|	ling2|	yi1|	er4|	san1|	si4|	wu3|	liu4|	qi1|	ba1|	jiu3|	shi2|	bai3|	qian1
 
 原perl代码地址[http://www.mandarintools.com/download/ChineseNumbersU8.pm](http://www.mandarintools.com/download/ChineseNumbersU8.pm)
 
-功能上做了裁剪，输出类型被我去掉了，源代码支持多种输出类型
+功能上做了裁剪，输出类型被我去掉了，源代码支持多种输出类型，英文转中文增加了分数(如1/3)支持
 
 
 # 测试

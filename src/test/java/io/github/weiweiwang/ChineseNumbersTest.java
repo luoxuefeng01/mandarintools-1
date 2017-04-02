@@ -14,14 +14,16 @@ import java.io.InputStreamReader;
  * Created by wangweiwei01 on 17/4/1.
  */
 public class ChineseNumbersTest {
-
-
     @Test
-    public void testEnglishNumberToChinese(){
+    public void testEnglishNumberToChinese() {
         Assert.assertEquals("二百萬九千", ChineseNumbers.englishNumberToChinese("2009000"));
         Assert.assertEquals("五点三", ChineseNumbers.englishNumberToChinese("5.3"));
         Assert.assertEquals("负五点三", ChineseNumbers.englishNumberToChinese("-5.3"));
+        Assert.assertEquals("三分之一", ChineseNumbers.englishNumberToChinese("1/3"));
+        Assert.assertEquals("负三分之一", ChineseNumbers.englishNumberToChinese("-1/3"));
+
     }
+
     @Test
     public void testChineseNumberToEnglish() {
         final double delta = 1e-10;
@@ -34,19 +36,19 @@ public class ChineseNumbersTest {
         Assert.assertEquals(3.514, ChineseNumbers.chineseNumberToEnglish("三点五一四"), delta);
         Assert.assertEquals(-3.514, ChineseNumbers.chineseNumberToEnglish("负三点五一四"), delta);
         Assert.assertEquals(26617900, ChineseNumbers.chineseNumberToEnglish("貳仟陸佰陸拾壹萬柒仟玖佰"), delta);
-        InputStream in =  ChineseNumbersTest.class.getResourceAsStream("/fixture.txt");
-        LineIterator lineIterator=  IOUtils.lineIterator(new BufferedReader(new InputStreamReader(in)));
-        while(lineIterator.hasNext()){
+        InputStream in = ChineseNumbersTest.class.getResourceAsStream("/fixture.txt");
+        LineIterator lineIterator = IOUtils.lineIterator(new BufferedReader(new InputStreamReader(in)));
+        while (lineIterator.hasNext()) {
             String line = StringUtils.stripToNull(lineIterator.nextLine());
-            if(StringUtils.isEmpty(line)){
+            if (StringUtils.isEmpty(line)) {
                 continue;
             }
-            String[] splits= line.split("\\s");
+            String[] splits = line.split("\\s");
             double simple = ChineseNumbers.chineseNumberToEnglish(splits[0]);
             double traditional = ChineseNumbers.chineseNumberToEnglish(splits[1]);
             double expected = Double.parseDouble(splits[2]);
-            Assert.assertEquals(expected,simple,delta);
-            Assert.assertEquals(traditional,simple,delta);
+            Assert.assertEquals(expected, simple, delta);
+            Assert.assertEquals(traditional, simple, delta);
         }
     }
 }
