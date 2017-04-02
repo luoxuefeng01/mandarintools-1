@@ -1,4 +1,38 @@
+
+# maven依赖
+在
+```
+    <repositories>
+    </repositories>
+```
+
+中增加一个repository
+
+```
+       <repository>
+            <id>weiweiwang-maven-repo</id>
+            <url>https://raw.githubusercontent.com/weiweiwang/mvn-repo/master/repository</url>
+        </repository>
+```
+
+在dependencies中增加
+```
+        <dependency>
+            <groupId>io.github.weiweiwang</groupId>
+            <artifactId>mandarintools</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+```
+
+
 # 功能说明
+
+对外暴漏的就是两个如下函数，使用方法参看下面的转换样例，由于都是静态函数，不会有类变量问题，所以是thread-safe的
+
+```
+    public static String englishNumberToChinese(String text)
+    public static double chineseNumberToEnglish(String text)
+```
 
 ## 中文数字转成英文数字
 支持负数、小数、分数，中文数字可以使用各种大小写形式，具体写法可以参考[对照表](#对照表)中内容
