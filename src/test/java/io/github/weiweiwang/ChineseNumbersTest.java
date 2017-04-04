@@ -36,6 +36,9 @@ public class ChineseNumbersTest {
         Assert.assertEquals(3.514, ChineseNumbers.chineseNumberToEnglish("三点五一四"), delta);
         Assert.assertEquals(-3.514, ChineseNumbers.chineseNumberToEnglish("负三点五一四"), delta);
         Assert.assertEquals(26617900, ChineseNumbers.chineseNumberToEnglish("貳仟陸佰陸拾壹萬柒仟玖佰"), delta);
+        Assert.assertEquals(5.3, ChineseNumbers.chineseNumberToEnglish("5．3"), delta);
+        Assert.assertEquals(1600000000L, ChineseNumbers.chineseNumberToEnglish("16亿"), delta);
+
         InputStream in = ChineseNumbersTest.class.getResourceAsStream("/fixture.txt");
         LineIterator lineIterator = IOUtils.lineIterator(new BufferedReader(new InputStreamReader(in)));
         while (lineIterator.hasNext()) {

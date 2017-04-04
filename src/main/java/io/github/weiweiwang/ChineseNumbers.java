@@ -97,11 +97,11 @@ public class ChineseNumbers {
         BEFORE_WAN_DIGITS_MAP.put("百", 100);
 
         AFTER_WAN_DIGITS_MAP.put("万", 10000L);
-        AFTER_WAN_DIGITS_MAP.put("京", 10000000000000000L);
+        AFTER_WAN_DIGITS_MAP.put("萬", 10000L);
         AFTER_WAN_DIGITS_MAP.put("亿", 100000000L);
         AFTER_WAN_DIGITS_MAP.put("億", 100000000L);
         AFTER_WAN_DIGITS_MAP.put("兆", 1000000000000L);
-        AFTER_WAN_DIGITS_MAP.put("萬", 10000L);
+        AFTER_WAN_DIGITS_MAP.put("京", 10000000000000000L);
 
         TRADITIONAL_TO_FORMAL_MAP.put("一", "壹");
         TRADITIONAL_TO_FORMAL_MAP.put("一", "壹");
@@ -220,6 +220,7 @@ public class ChineseNumbers {
 
     /**
      * 直接映射英文数字为中文数字，对应输入的小数部分如此处理
+     *
      * @param text
      * @return
      */
@@ -233,6 +234,7 @@ public class ChineseNumbers {
 
     /**
      * 非输入的小数部分需要做更复杂的转换
+     *
      * @param text
      * @return
      */
@@ -313,6 +315,7 @@ public class ChineseNumbers {
 
     /**
      * 输入如果完全匹配中文对应的数字，直接调用此函数映射输出
+     *
      * @param text
      * @return
      */
@@ -328,6 +331,7 @@ public class ChineseNumbers {
 
     /**
      * 对应复杂的中文数字串
+     *
      * @param text
      * @return
      */
@@ -373,6 +377,14 @@ public class ChineseNumbers {
                 power = -1; // 小数点之后的第一位是10^-1，第二位是10^-2，以此类推
             } else if (c == '兆') { // 遇到一个level层级兆，levelTotal清0
                 power = 12;
+                if (levelTotal == 0) {
+                    levelTotal = 1;
+                }
+                total += levelTotal * Math.pow(10, power);
+                levelTotal = 0;
+                power -= 4;
+            } else if (c == '亿' || c == '億') {
+                power = 8;
                 if (levelTotal == 0) {
                     levelTotal = 1;
                 }
@@ -448,7 +460,7 @@ public class ChineseNumbers {
                     }
                 }
             } else {
-                LOGGER.debug("bad input number string:{}", text);
+                throw new IllegalArgumentException("bad input:" + text);
             }
         }
         total += levelTotal;
