@@ -1,4 +1,4 @@
-package io.github.weiweiwang;
+package io.github.weiweiwang.number;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
