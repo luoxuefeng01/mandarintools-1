@@ -1,3 +1,11 @@
+# 更新历史
+
+## v1.0.6 更新时间识别模块
+原有的正则表达式可读性太差，不好修改，这个版本主要更新了正则表达式的表示方法，详细的更新点如下：
+
+* 更新了正则表达式的输入方式，目前放到time.regex文件中，每行一个正则，可以识别一类时间实体，以`#`开头的行会跳过，空白行也会被跳过
+* TimeEntityRecognizer构造函数允许以文件输入和InputStream输入正则，格式和time.regex一致
+* 修复了`5月18`无法识别的情况，这个原来会被识别为`5月`
 
 # maven依赖
 在
@@ -93,7 +101,7 @@ Pinyin|	ling2|	yi1|	er4|	san1|	si4|	wu3|	liu4|	qi1|	ba1|	jiu3|	shi2|	bai3|	qian1
 
 ## 时间实体识别
 
-越来越多的聊天机器人出现
+越来越多的聊天机器人出现，其中时间实体等系统实体的识别是痛点之一，本开源代码基于[复旦nlp](https://github.com/FudanNLP/fnlp)开源库实现，增加offset，优化了代码清晰度和结构
 
 对外暴漏的是`parse`函数，test case代码如下，调用是thread-safe的
 
@@ -117,6 +125,3 @@ public void testTimeEntityRecognition() {
     private Date value;
     private int offset;
 ```
-
-### 参考
-这个实现基本完全参考了[复旦nlp](https://github.com/FudanNLP/fnlp)开发代码库，修正了offset缺失的问题，优化了代码清晰度和结构，更紧凑易读
