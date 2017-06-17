@@ -580,13 +580,21 @@ public class TimeUnit {
             calendar.add(Calendar.MONTH, 1);
         }
 
-        rule = "大前天";
-        pattern = Pattern.compile(rule);
-        match = pattern.matcher(Time_Expression);
-        if (match.find()) {
+        if (Time_Expression.contains("大大前天")) {
+            calendar.add(Calendar.DATE, -4);
             flag[2] = true;
+        } else if (Time_Expression.contains("大前天")) {
             calendar.add(Calendar.DATE, -3);
+            flag[2] = true;
         }
+
+//        rule = "大前天";
+//        pattern = Pattern.compile(rule);
+//        match = pattern.matcher(Time_Expression);
+//        if (match.find()) {
+//            flag[2] = true;
+//            calendar.add(Calendar.DATE, -3);
+//        }
 
         rule = "(?<!大)前天";
         pattern = Pattern.compile(rule);

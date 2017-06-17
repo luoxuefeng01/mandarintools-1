@@ -39,7 +39,7 @@ public class ChineseNumbersTest {
         Assert.assertEquals(5.3, ChineseNumbers.chineseNumberToEnglish("5．3"), delta);
         Assert.assertEquals(1600000000L, ChineseNumbers.chineseNumberToEnglish("16亿"), delta);
 
-        InputStream in = ChineseNumbersTest.class.getResourceAsStream("/fixture.txt");
+        InputStream in = ChineseNumbersTest.class.getResourceAsStream("/number_test_fixture.txt");
         LineIterator lineIterator = IOUtils.lineIterator(new BufferedReader(new InputStreamReader(in)));
         while (lineIterator.hasNext()) {
             String line = StringUtils.stripToNull(lineIterator.nextLine());

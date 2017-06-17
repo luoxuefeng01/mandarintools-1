@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 public class TimeEntityRecognizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeEntityRecognizer.class);
     private Pattern pattern;
+    private List<String> regexList;
 
     public TimeEntityRecognizer() throws IOException {
         this(TimeEntityRecognizer.class.getResourceAsStream("/time.regex"));
@@ -39,13 +40,18 @@ public class TimeEntityRecognizer {
     }
 
     public TimeEntityRecognizer(InputStream in) throws IOException {
-        String regex = IOUtils.readLines(in, "UTF-8").stream().map(StringUtils::stripToNull)
-                .filter(item -> StringUtils.isNotEmpty(item) && !item.startsWith("#"))
-                .collect(Collectors.joining("|"));
+        regexList = IOUtils.readLines(in, "UTF-8").stream().map(StringUtils::stripToNull)
+                .filter(item -> StringUtils.isNotEmpty(item) && !item.startsWith("#")).distinct()
+//                .sorted((o1, o2) -> o2.length() - o1.length())
+                .collect(Collectors.toList());
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("input regex:{}", regex);
+            LOGGER.trace("input regex[size={}, text={}]", regexList.size(), regexList);
         }
-        this.pattern = Pattern.compile(regex);
+        long start = System.currentTimeMillis();
+        this.pattern = Pattern.compile(regexList.stream().map(item -> "(" + item + ")").collect(Collectors.joining("|")));
+        long end = System.currentTimeMillis();
+        LOGGER.info("pattern initialized for {} patterns, time used(ms):{}", regexList.size(),
+                (end - start));
     }
 
     public List<TimeEntity> parse(String text) {
@@ -77,9 +83,6 @@ public class TimeEntityRecognizer {
                 iterator.remove();
             }
         }
-//        for (TimeEntity timeEntity : result) {
-//            timeEntity.setValue(parseTime(timeEntity.getOriginal(), relative));
-//        }
         return result;
     }
 
@@ -105,6 +108,26 @@ public class TimeEntityRecognizer {
 
     private boolean validTime(int arr[]) {
         int sum = Arrays.stream(arr).sum();
+        //month
+        if (arr[1] > 12) {
+            return false;
+        }
+        //day
+        if (arr[2] > 31) {
+            return false;
+        }
+        //hour
+        if (arr[3] > 23) {
+            return false;
+        }
+        //minute
+        if (arr[4] > 59) {
+            return false;
+        }
+        //second
+        if (arr[5] > 59) {
+            return false;
+        }
         return sum != -6;
     }
 
@@ -196,7 +219,7 @@ public class TimeEntityRecognizer {
         return year;
     }
 
-    private static final Pattern MONTH_PATTERN = Pattern.compile("((10)|(11)|(12)|([1-9]))(?=月)");
+    private static final Pattern MONTH_PATTERN = Pattern.compile("((?<!\\d))((10)|(11)|(12)|([1-9]))(?=月)");
 
     private int parseMonth(String text) {
         Matcher match = MONTH_PATTERN.matcher(text);
@@ -223,7 +246,7 @@ public class TimeEntityRecognizer {
     }
 
 
-    private static final Pattern HOUR_PATTERN = Pattern.compile("(?<!(周|星期))([0-2]?[0-9])(?=(点|时))");
+    private static final Pattern HOUR_PATTERN = Pattern.compile("(?<!(周|星期|\\d))([0-2]?[0-9])(?=(点|时))");
     private static final Pattern NOON_PATTERN = Pattern.compile("(中午)|(午间)");
     private static final Pattern AFTERNOON_PATTERN = Pattern.compile("(下午)|(午后)|(pm)|(PM)");
     private static final Pattern NIGHT_PATTERN = Pattern.compile("晚");
@@ -275,7 +298,7 @@ public class TimeEntityRecognizer {
         return hour;
     }
 
-    private static final Pattern MINUTE_PATTERN = Pattern.compile("([0-5]?[0-9](?=分(?!钟)))|((?<=((?<!小)[点时]))[0-5]?[0-9](?!刻))");
+    private static final Pattern MINUTE_PATTERN = Pattern.compile("([0-5]?[0-9](?=分(?!钟)))|((?<=((?<!(周|星期|\\d))([0-2]?[0-9])(点|时)))[0-5]?[0-9](?!刻))");
     private static final Pattern ONE_QUARTER_PATTERN = Pattern.compile("(?<=[点时])[1一]刻(?!钟)");
     private static final Pattern TWO_QUARTER_PATTERN = Pattern.compile("(?<=[点时])半");
     private static final Pattern THREE_QUARTER_PATTERN = Pattern.compile("(?<=[点时])[3三]刻(?!钟)");
@@ -692,13 +715,5 @@ public class TimeEntityRecognizer {
         if (flag[2]) {
             arr[2] = calendar.get(Calendar.DAY_OF_MONTH);
         }
-    }
-
-    public Pattern getPattern() {
-        return pattern;
-    }
-
-    public void setPattern(Pattern pattern) {
-        this.pattern = pattern;
     }
 }
