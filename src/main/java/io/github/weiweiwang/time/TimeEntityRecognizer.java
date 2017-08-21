@@ -447,6 +447,10 @@ public class TimeEntityRecognizer {
         }
     }
 
+    private static final Pattern MINUTE_BEFORE_PATTERN = Pattern.compile("\\d+(?=分钟[以之]?前)");
+    private static final Pattern MINUTE_AFTER_PATTERN = Pattern.compile("\\d+(?=分钟[以之]?后)");
+    private static final Pattern HOURS_BEFORE_PATTERN = Pattern.compile("\\d+(?=小时[以之]?前)");
+    private static final Pattern HOURS_AFTER_PATTERN = Pattern.compile("\\d+(?=小时[以之]?后)");
     private static final Pattern DAYS_BEFORE_PATTERN = Pattern.compile("\\d+(?=天[以之]?前)");
     private static final Pattern DAYS_AFTER_PATTERN = Pattern.compile("\\d+(?=天[以之]?后)");
     private static final Pattern MONTH_BEFORE_PATTERN = Pattern.compile("\\d+(?=(个)?月[以之]?前)");
@@ -459,13 +463,46 @@ public class TimeEntityRecognizer {
         Calendar calendar = Calendar.getInstance();
         calendar.setFirstDayOfWeek(Calendar.MONDAY);
         calendar.setTime(relative);
-        boolean[] flag = {false, false, false};
+        //年，月，日，小时，分钟
+        boolean[] flag = {false, false, false, false, false};
 
-        Matcher match = DAYS_BEFORE_PATTERN.matcher(text);
+        Matcher match = HOURS_BEFORE_PATTERN.matcher(text);
+        if (match.find()) {
+            int hour = Integer.parseInt(match.group());
+            calendar.add(Calendar.HOUR_OF_DAY, -hour);
+            flag[3] = true;
+            flag[4] = true;
+        }
+
+        match = HOURS_AFTER_PATTERN.matcher(text);
+        if (match.find()) {
+            int hour = Integer.parseInt(match.group());
+            calendar.add(Calendar.HOUR_OF_DAY, hour);
+            flag[3] = true;
+            flag[4] = true;
+        }
+
+        match = MINUTE_BEFORE_PATTERN.matcher(text);
+        if (match.find()) {
+            int minute = Integer.parseInt(match.group());
+            calendar.add(Calendar.MINUTE, -minute);
+            flag[4] = true;
+        }
+
+        match = MINUTE_AFTER_PATTERN.matcher(text);
+        if (match.find()) {
+            int minute = Integer.parseInt(match.group());
+            calendar.add(Calendar.MINUTE, minute);
+            flag[4] = true;
+        }
+
+        match = DAYS_BEFORE_PATTERN.matcher(text);
         if (match.find()) {
             int day = Integer.parseInt(match.group());
             calendar.add(Calendar.DATE, -day);
             flag[2] = true;
+            flag[3] = true;
+            flag[4] = true;
         }
 
         match = DAYS_AFTER_PATTERN.matcher(text);
@@ -473,6 +510,8 @@ public class TimeEntityRecognizer {
             int day = Integer.parseInt(match.group());
             calendar.add(Calendar.DATE, day);
             flag[2] = true;
+            flag[3] = true;
+            flag[4] = true;
         }
 
         match = MONTH_BEFORE_PATTERN.matcher(text);
@@ -507,14 +546,20 @@ public class TimeEntityRecognizer {
 //            arr[1] = calendar.get(Calendar.MONTH) + 1;
 //            arr[2] = calendar.get(Calendar.DAY_OF_MONTH);
 //        }
-        if (flag[0] || flag[1] || flag[2]) {
+        if (flag[0] || flag[1] || flag[2] || flag[3] || flag[4]) {
             arr[0] = calendar.get(Calendar.YEAR);
         }
-        if (flag[1] || flag[2]) {
+        if (flag[1] || flag[2] || flag[3] || flag[4]) {
             arr[1] = calendar.get(Calendar.MONTH) + 1;
         }
-        if (flag[2]) {
+        if (flag[2] || flag[3] || flag[4]) {
             arr[2] = calendar.get(Calendar.DAY_OF_MONTH);
+        }
+        if (flag[3] || flag[4]) {
+            arr[3] = calendar.get(Calendar.HOUR);
+        }
+        if (flag[4]) {
+            arr[4] = calendar.get(Calendar.MINUTE);
         }
     }
 
