@@ -449,8 +449,8 @@ public class TimeEntityRecognizer {
 
     private static final Pattern MINUTE_BEFORE_PATTERN = Pattern.compile("\\d+(?=分钟[以之]?前)");
     private static final Pattern MINUTE_AFTER_PATTERN = Pattern.compile("\\d+(?=分钟[以之]?后)");
-    private static final Pattern HOURS_BEFORE_PATTERN = Pattern.compile("\\d+(?=小时[以之]?前)");
-    private static final Pattern HOURS_AFTER_PATTERN = Pattern.compile("\\d+(?=小时[以之]?后)");
+    private static final Pattern HOURS_BEFORE_PATTERN = Pattern.compile("\\d+(?=(个)?小时[以之]?前)");
+    private static final Pattern HOURS_AFTER_PATTERN = Pattern.compile("\\d+(?=(个)?小时[以之]?后)");
     private static final Pattern DAYS_BEFORE_PATTERN = Pattern.compile("\\d+(?=天[以之]?前)");
     private static final Pattern DAYS_AFTER_PATTERN = Pattern.compile("\\d+(?=天[以之]?后)");
     private static final Pattern MONTH_BEFORE_PATTERN = Pattern.compile("\\d+(?=(个)?月[以之]?前)");
@@ -556,7 +556,7 @@ public class TimeEntityRecognizer {
             arr[2] = calendar.get(Calendar.DAY_OF_MONTH);
         }
         if (flag[3] || flag[4]) {
-            arr[3] = calendar.get(Calendar.HOUR);
+            arr[3] = calendar.get(Calendar.HOUR_OF_DAY);
         }
         if (flag[4]) {
             arr[4] = calendar.get(Calendar.MINUTE);
