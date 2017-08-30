@@ -74,11 +74,21 @@ public class TimeEntityRecognizer {
             }
         }
         Iterator<TimeEntity> iterator = result.iterator();
+        Date lastRelative = relative;
         while (iterator.hasNext()) {
             TimeEntity timeEntity = iterator.next();
-            Date date = parseTime(timeEntity.getOriginal(), relative);
+
+            Date date = parseTime(timeEntity.getOriginal(), lastRelative, lastRelative.equals(relative), timeEntity);
             if (null != date) {
-                timeEntity.setValue(date);
+                lastRelative = date;
+                offset = timeEntity.getOffset();
+                if (offset > 1 && text.charAt(offset - 1) == '到') {
+                    timeEntity.setStart(false);
+                    timeEntity.setEnd(true);
+                } else if (offset + timeEntity.getOriginal().length() < text.length() && text.charAt(offset + timeEntity.getOriginal().length()) == '到') {
+                    timeEntity.setStart(true);
+                    timeEntity.setEnd(false);
+                }
             } else {
                 iterator.remove();
             }
@@ -117,7 +127,7 @@ public class TimeEntityRecognizer {
             return false;
         }
         //hour
-        if (arr[3] > 23) {
+        if (arr[3] > 24) {
             return false;
         }
         //minute
@@ -131,7 +141,7 @@ public class TimeEntityRecognizer {
         return sum != -6;
     }
 
-    private Date parseTime(String text, Date relative) {
+    private Date parseTime(String text, Date relative, boolean isDefaultRelative, TimeEntity timeEntity) {
         text = normalizeTimeString(text);
         int year = parseYear(text);
         int month = parseMonth(text);
@@ -140,6 +150,10 @@ public class TimeEntityRecognizer {
         int minute = parseMinute(text);
         int second = parseSecond(text);
         int[] arr = {year, month, day, hour, minute, second};
+        String cycle = parseCycle(text);
+        if (null != cycle) {
+            timeEntity.setCycle(Cycle.parseCycle(cycle));
+        }
         overallParse(text, arr);
         parseRelative(text, relative, arr);
         parseCurrentRelative(text, relative, arr);
@@ -147,7 +161,7 @@ public class TimeEntityRecognizer {
         if (!validTime(arr)) {
             return null;
         }
-        normalize(arr, relative);
+        normalize(arr, relative, isDefaultRelative);
         Calendar calendar = Calendar.getInstance();
         calendar.clear();
         final int[] fields = {Calendar.YEAR, Calendar.MONTH, Calendar.DAY_OF_MONTH, Calendar.HOUR_OF_DAY, Calendar
@@ -160,7 +174,12 @@ public class TimeEntityRecognizer {
         if (arr[1] > 0) {
             calendar.set(Calendar.MONTH, arr[1] - 1);
         }
-        return calendar.getTime();
+        Date ret = calendar.getTime();
+        timeEntity.setValue(calendar.getTime());
+        if (arr[3] + arr[4] + arr[5] <= -3) {//没有时间信息
+            timeEntity.setDateOnly(true);
+        }
+        return ret;
     }
 
     /**
@@ -169,15 +188,21 @@ public class TimeEntityRecognizer {
      * @param arr
      * @param relative
      */
-    private void normalize(int[] arr, Date relative) {
+    private void normalize(int[] arr, Date relative, boolean isDefaultRelative) {
         int j = 0;
         for (int i = 0; i < arr.length; i++) {
-            if (arr[i] > 0) {
+            if (arr[i] >= 0) {
                 j = i;
                 break;
             }
         }
         Calendar calender = Calendar.getInstance();
+
+        //如果没有相对日期约束，时间又是过去的时间，设置为最近的一个未来时间
+        if (isDefaultRelative && arr[2] < 0 && arr[3] < calender.get(Calendar.HOUR_OF_DAY)) {
+            arr[3] += 12;
+        }
+
         calender.setTime(relative);
         final int[] fields = {Calendar.YEAR, Calendar.MONTH, Calendar.DAY_OF_MONTH, Calendar.HOUR_OF_DAY, Calendar
                 .MINUTE, Calendar.SECOND};
@@ -246,7 +271,7 @@ public class TimeEntityRecognizer {
     }
 
 
-    private static final Pattern HOUR_PATTERN = Pattern.compile("(?<!(周|星期|\\d))([0-2]?[0-9])(?=(点|时))");
+    private static final Pattern HOUR_PATTERN = Pattern.compile("(?<!(周|星期))([0-2]?[0-9])(?=(点|时))");//(?<!(周|星期))([0-2]?[0-9])(?=(点|时))
     private static final Pattern NOON_PATTERN = Pattern.compile("(中午)|(午间)");
     private static final Pattern AFTERNOON_PATTERN = Pattern.compile("(下午)|(午后)|(pm)|(PM)");
     private static final Pattern NIGHT_PATTERN = Pattern.compile("晚");
@@ -293,7 +318,7 @@ public class TimeEntityRecognizer {
             if (hour >= 1 && hour <= 11)
                 hour += 12;
             else if (hour == 12)
-                hour = 0;
+                hour += 12;
         }
         return hour;
     }
@@ -447,11 +472,11 @@ public class TimeEntityRecognizer {
         }
     }
 
-    private static final Pattern MINUTE_BEFORE_PATTERN = Pattern.compile("\\d+(?=分钟[以之]?前)");
+    private static final Pattern MINUTE_BEFORE_PATTERN = Pattern.compile("(\\d+(?=分钟[以之]?前))|((?<=提前)\\d+(?=分钟))");
     private static final Pattern MINUTE_AFTER_PATTERN = Pattern.compile("\\d+(?=分钟[以之]?后)");
-    private static final Pattern HOURS_BEFORE_PATTERN = Pattern.compile("\\d+(?=(个)?小时[以之]?前)");
+    private static final Pattern HOURS_BEFORE_PATTERN = Pattern.compile("(\\d+(?=(个)?小时[以之]?前))|((?<=提前)\\d+(?=(个)?小时))");
     private static final Pattern HOURS_AFTER_PATTERN = Pattern.compile("\\d+(?=(个)?小时[以之]?后)");
-    private static final Pattern DAYS_BEFORE_PATTERN = Pattern.compile("\\d+(?=天[以之]?前)");
+    private static final Pattern DAYS_BEFORE_PATTERN = Pattern.compile("(\\d+(?=天[以之]?前))|((?<=提前)?\\d+(?=天))");
     private static final Pattern DAYS_AFTER_PATTERN = Pattern.compile("\\d+(?=天[以之]?后)");
     private static final Pattern MONTH_BEFORE_PATTERN = Pattern.compile("\\d+(?=(个)?月[以之]?前)");
     private static final Pattern MONTH_AFTER_PATTERN = Pattern.compile("\\d+(?=(个)?月[以之]?后)");
@@ -561,6 +586,16 @@ public class TimeEntityRecognizer {
         if (flag[4]) {
             arr[4] = calendar.get(Calendar.MINUTE);
         }
+    }
+
+    private static final Pattern CYCLE_UNIT_PATTERN = Pattern.compile("((每天)|(每周[1-7])|(每月[1-31]号?)|每年)");
+
+    public String parseCycle(String text) {
+        Matcher match = CYCLE_UNIT_PATTERN.matcher(text);
+        if (match.find()) {
+            return match.group();
+        }
+        return null;
     }
 
 
