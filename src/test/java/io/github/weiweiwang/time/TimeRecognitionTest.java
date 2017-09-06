@@ -53,7 +53,7 @@ public class TimeRecognitionTest {
 
     @Test
     public void testAlarmRecognition() throws IOException {
-        String[] texts = {"每月1号5点提醒我","晚上12点提醒我", "晚上9点提醒我", "6点叫我", "每周四5点提醒我", "提醒明天下午1点到2点开会", "取消明天的日程", "设置明天下午1点开会的闹铃，提前1小时叫我", "设置明天下午1点开会的闹铃，提前两个小时叫我", "设置明天下午1点开会的闹铃，提前两小时叫我", "每天早5点提醒起床",};
+        String[] texts = {"17点10分", "每月1号5点提醒我", "晚上12点提醒我", "晚上9点提醒我", "6点叫我", "每周四5点提醒我", "提醒明天下午1点到2点开会", "取消明天的日程", "设置明天下午1点开会的闹铃，提前1小时叫我", "设置明天下午1点开会的闹铃，提前两个小时叫我", "设置明天下午1点开会的闹铃，提前两小时叫我", "每天早5点提醒起床",};
         TimeEntityRecognizer timeEntityRecognizer = new TimeEntityRecognizer();
         TimeNormalizer normalizer = new TimeNormalizer();
         for (String txt : texts) {
@@ -63,6 +63,40 @@ public class TimeRecognitionTest {
             List<TimeEntity> timeEntityList = timeEntityRecognizer.parse(txt);
             LOGGER.debug("text:{},time unit:{}, time entities:{}", txt, Arrays.asList(unit), timeEntityList);
 //            Assert.assertEquals(timeUnitList.get(0).getTime(), timeEntityList.get(0).getValue());
+        }
+    }
+
+
+    /**
+     * 时间段，比如一个小时、五分钟、一天、一个月
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testDuration() throws IOException {
+        String[] texts = {"五分钟", "一个小时", "一天", "6点叫我", "一个月", "提前一个小时"};
+        TimeDurationEntityRecognizer timeEntityRecognizer = new TimeDurationEntityRecognizer();
+        TimeNormalizer normalizer = new TimeNormalizer();
+        for (String txt : texts) {
+            TimeUnit[] unit = normalizer.parse(txt);//对于上/下的识别
+            List<TimeUnit> timeUnitList = Arrays.stream(unit).filter(item -> !item.Time_Norm.isEmpty()).collect
+                    (Collectors.toList());
+            List<TimeDurationEntity> timeEntityList = timeEntityRecognizer.parse(txt);
+            LOGGER.debug("text:{},time unit:{}, duration entities:{}", txt, timeUnitList, timeEntityList);
+        }
+    }
+
+    @Test
+    public void testTimeDelta() throws IOException {
+        String[] texts = {"提前五分钟", "延迟一个小时", "推迟一天", "提前一个小时"};
+        TimeDeltaEntityRecognizer timeDeltaEntityRecognizer = new TimeDeltaEntityRecognizer();
+        TimeNormalizer normalizer = new TimeNormalizer();
+        for (String txt : texts) {
+            TimeUnit[] unit = normalizer.parse(txt);//对于上/下的识别
+            List<TimeUnit> timeUnitList = Arrays.stream(unit).filter(item -> !item.Time_Norm.isEmpty()).collect
+                    (Collectors.toList());
+            List<TimeDeltaEntity> timeDeltaEntityList = timeDeltaEntityRecognizer.parse(txt);
+            LOGGER.debug("text:{},time unit:{}, duration entities:{}", txt, timeUnitList, timeDeltaEntityList);
         }
     }
 

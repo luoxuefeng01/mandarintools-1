@@ -96,10 +96,6 @@ public class TimeEntityRecognizer {
         return result;
     }
 
-
-    private static final Pattern YEAR_2_DIGIT_PATTERN = Pattern.compile("[0-9]{2}(?=年)");
-    private static final Pattern YEAR_4_DIGIT_PATTERN = Pattern.compile("[0-9]?[0-9]{3}(?=年)");
-
     private String normalizeTimeString(String text) {
         text = text.replace("周日", "周7").replace("：", ":");
         Pattern p = Pattern.compile("[一二两三四五六七八九十]+");
@@ -216,6 +212,9 @@ public class TimeEntityRecognizer {
             }
         }
     }
+
+    private static final Pattern YEAR_2_DIGIT_PATTERN = Pattern.compile("[0-9]{2}(?=年)");
+    private static final Pattern YEAR_4_DIGIT_PATTERN = Pattern.compile("[0-9]?[0-9]{3}(?=年)");
 
     private int parseYear(String text) {
         int year = -1;

@@ -1,7 +1,7 @@
 # 更新历史
 
-## v1.2.0
-TODO  sys_timedelta, sys_duration
+## v1.1.3
+增加sys_timedelta, sys_duration的识别，draft version now
 
 ## v1.1.2
 * 增加相对时间识别，增加日期boolean属性，增加起始时间和结束时间boolean属性
