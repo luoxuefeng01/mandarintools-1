@@ -1,5 +1,8 @@
 # 更新历史
 
+## v1.1.4
+fix bug for: 早上四点三十分，早上四点半， add timezone support
+
 ## v1.1.3
 增加sys_timedelta, sys_duration的识别，draft version now
 

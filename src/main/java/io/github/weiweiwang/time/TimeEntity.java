@@ -5,6 +5,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * Created by wangweiwei01 on 17/4/19.
@@ -56,6 +57,12 @@ public class TimeEntity {
     }
 
     public String toString() {
+        SimpleDateFormat timeSdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        timeSdf.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
+
+        SimpleDateFormat dateSdf = new SimpleDateFormat("yyyy-MM-dd");
+        dateSdf.setTimeZone(TimeZone.getTimeZone("Asia/Shanghai"));
+
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).
                 append("offset", offset)
                 .append("original", original)
@@ -64,10 +71,8 @@ public class TimeEntity {
                 .append("isStart", isStart)
                 .append("isEnd", isEnd)
                 .append("value", value != null ? (isDateOnly ?
-                        new SimpleDateFormat("yyyy-MM-dd").format(value) :
-                        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(value))
-                        : value).
-                        toString();
+                        dateSdf.format(value) :
+                        timeSdf.format(value)) : value).toString();
     }
 
     public boolean isDateOnly() {

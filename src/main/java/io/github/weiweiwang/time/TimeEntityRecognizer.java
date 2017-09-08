@@ -15,6 +15,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
  */
 public class TimeEntityRecognizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeEntityRecognizer.class);
+    private static final TimeZone CHINA_TIME_ZONE = TimeZone.getTimeZone("Asia/Shanghai");
     private Pattern pattern;
     private List<String> regexList;
 
@@ -55,10 +57,14 @@ public class TimeEntityRecognizer {
     }
 
     public List<TimeEntity> parse(String text) {
-        return parse(text, Calendar.getInstance().getTime());
+        return parse(text, CHINA_TIME_ZONE);
     }
 
-    public List<TimeEntity> parse(String text, Date relative) {
+    public List<TimeEntity> parse(String text, TimeZone timeZone) {
+        return parse(text, timeZone, Calendar.getInstance(timeZone).getTime());
+    }
+
+    public List<TimeEntity> parse(String text, TimeZone timeZone, Date relative) {
         List<TimeEntity> result = new ArrayList<>();
         int offset;
         Matcher match = pattern.matcher(text);
@@ -78,7 +84,8 @@ public class TimeEntityRecognizer {
         while (iterator.hasNext()) {
             TimeEntity timeEntity = iterator.next();
 
-            Date date = parseTime(timeEntity.getOriginal(), lastRelative, lastRelative.equals(relative), timeEntity);
+            Date date = parseTime(timeEntity.getOriginal(), timeZone, lastRelative, lastRelative.equals(relative),
+                    timeEntity);
             if (null != date) {
                 lastRelative = date;
                 offset = timeEntity.getOffset();
@@ -137,7 +144,7 @@ public class TimeEntityRecognizer {
         return sum != -6;
     }
 
-    private Date parseTime(String text, Date relative, boolean isDefaultRelative, TimeEntity timeEntity) {
+    private Date parseTime(String text, TimeZone timeZone, Date relative, boolean isDefaultRelative, TimeEntity timeEntity) {
         text = normalizeTimeString(text);
         int year = parseYear(text);
         int month = parseMonth(text);
@@ -151,14 +158,14 @@ public class TimeEntityRecognizer {
             timeEntity.setCycle(Cycle.parseCycle(cycle));
         }
         overallParse(text, arr);
-        parseRelative(text, relative, arr);
-        parseCurrentRelative(text, relative, arr);
+        parseRelative(text, timeZone, relative, arr);
+        parseCurrentRelative(text, timeZone, relative, arr);
 
         if (!validTime(arr)) {
             return null;
         }
-        normalize(arr, relative, isDefaultRelative);
-        Calendar calendar = Calendar.getInstance();
+        normalize(arr, timeZone, relative, isDefaultRelative);
+        Calendar calendar = Calendar.getInstance(timeZone);
         calendar.clear();
         final int[] fields = {Calendar.YEAR, Calendar.MONTH, Calendar.DAY_OF_MONTH, Calendar.HOUR_OF_DAY, Calendar
                 .MINUTE, Calendar.SECOND};
@@ -184,7 +191,7 @@ public class TimeEntityRecognizer {
      * @param arr
      * @param relative
      */
-    private void normalize(int[] arr, Date relative, boolean isDefaultRelative) {
+    private void normalize(int[] arr, TimeZone timeZone, Date relative, boolean isDefaultRelative) {
         int j = 0;
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] >= 0) {
@@ -192,7 +199,7 @@ public class TimeEntityRecognizer {
                 break;
             }
         }
-        Calendar calender = Calendar.getInstance();
+        Calendar calender = Calendar.getInstance(timeZone);
 
         //如果没有相对日期约束，时间又是过去的时间，设置为最近的一个未来时间
         if (isDefaultRelative && arr[2] < 0 && arr[3] < calender.get(Calendar.HOUR_OF_DAY)) {
@@ -482,9 +489,9 @@ public class TimeEntityRecognizer {
     private static final Pattern YEAR_BEFORE_PATTERN = Pattern.compile("\\d+(?=年[以之]?前)");
     private static final Pattern YEAR_AFTER_PATTERN = Pattern.compile("\\d+(?=年[以之]?后)");
 
-    private void parseRelative(String text, Date relative, int[] arr) {
+    private void parseRelative(String text, TimeZone timeZone, Date relative, int[] arr) {
 
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(timeZone);
         calendar.setFirstDayOfWeek(Calendar.MONDAY);
         calendar.setTime(relative);
         //年，月，日，小时，分钟
@@ -616,8 +623,8 @@ public class TimeEntityRecognizer {
      * <p>
      * add by 曹零
      */
-    public void parseCurrentRelative(String text, Date relative, int[] arr) {
-        Calendar calendar = Calendar.getInstance();
+    public void parseCurrentRelative(String text, TimeZone timeZone, Date relative, int[] arr) {
+        Calendar calendar = Calendar.getInstance(timeZone);
         calendar.setFirstDayOfWeek(Calendar.MONDAY);
         calendar.setTime(relative);
 

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -33,10 +34,35 @@ import java.util.stream.Stream;
 public class TimeRecognitionTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimeRecognitionTest.class);
 
+
+    @Test
+    public void testTimeZone() throws IOException {
+        Arrays.stream(TimeZone.getAvailableIDs()).forEach(item -> {
+            LOGGER.info("timezone:{}", item);
+        });
+
+        TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
+        TimeZone chinaTimeZone = TimeZone.getTimeZone("Asia/Shanghai");
+
+        TimeEntityRecognizer timeEntityRecognizer = new TimeEntityRecognizer();
+        String[] texts = {"早上四点三十分", "早上四点半", "2个小时后", "两个小时以后", "两小时后", "帮我设置一下下周五", "15分钟后", "一小时后", "四点半", "一天后", "明天下午两点",
+                "六月三号", "六月三日", "5月18日", "5月18号", "大前天", "大大前天", "上上周日", "六月十五日", "1972年", "80年", "今天", "去年", "1997年", "今晚", "今年", "最近两三年", "Hi，all.下午三点开会",
+                "周一开会", "早上六点起床", "下下周一开会"};
+        TimeNormalizer normalizer = new TimeNormalizer();
+        for (String txt : texts) {
+            TimeUnit[] unit = normalizer.parse(txt);//对于上/下的识别
+            List<TimeUnit> timeUnitList = Arrays.stream(unit).filter(item -> !item.Time_Norm.isEmpty()).collect
+                    (Collectors.toList());
+            List<TimeEntity> timeEntityList = timeEntityRecognizer.parse(txt, chinaTimeZone);
+            LOGGER.debug("text:{},time unit:{}, time entities:{}", txt, Arrays.asList(unit), timeEntityList);
+//            Assert.assertEquals(timeUnitList.get(0).getTime(), timeEntityList.get(0).getValue());
+        }
+    }
+
     @Test
     public void testTimeEntityRecognition() throws IOException {
         TimeEntityRecognizer timeEntityRecognizer = new TimeEntityRecognizer();
-        String[] texts = {"《辽宁日报》今日报道，6月3日辽宁召开省委常委扩大会，会议从下午两点半开到六点半，主要议题为：落实中央巡视整改要求", "2个小时后", "两个小时以后", "两小时后", "帮我设置一下下周五", "15分钟后", "一小时后", "四点半", "一天后", "明天下午两点",
+        String[] texts = {"早上四点三十分", "早上四点半", "《辽宁日报》今日报道，6月3日辽宁召开省委常委扩大会，会议从下午两点半开到六点半，主要议题为：落实中央巡视整改要求", "2个小时后", "两个小时以后", "两小时后", "帮我设置一下下周五", "15分钟后", "一小时后", "四点半", "一天后", "明天下午两点",
                 "央行开始推动MPA收紧货币以支持汇率，后一周国务院88号8号文再次收紧地方政府举债，我这几天住在颐和园附近的七天连锁酒店里，下午3" +
                         "点去附近逛逛，明天两点准备换到故宫旁边的westin去", "六月三号", "六月三日", "5月18日", "5月18号", "大前天", "大大前天", "上上周日", "六月十五日", "1972年", "80年", "今天", "去年", "1997年", "今晚", "今年", "最近两三年", "Hi，all.下午三点开会",
                 "周一开会", "早上六点起床", "下下周一开会"};
@@ -53,7 +79,7 @@ public class TimeRecognitionTest {
 
     @Test
     public void testAlarmRecognition() throws IOException {
-        String[] texts = {"17点10分", "每月1号5点提醒我", "晚上12点提醒我", "晚上9点提醒我", "6点叫我", "每周四5点提醒我", "提醒明天下午1点到2点开会", "取消明天的日程", "设置明天下午1点开会的闹铃，提前1小时叫我", "设置明天下午1点开会的闹铃，提前两个小时叫我", "设置明天下午1点开会的闹铃，提前两小时叫我", "每天早5点提醒起床",};
+        String[] texts = {"早上四点三十分", "早上四点半", "17点10分", "每月1号5点提醒我", "晚上12点提醒我", "晚上9点提醒我", "6点叫我", "每周四5点提醒我", "提醒明天下午1点到2点开会", "取消明天的日程", "设置明天下午1点开会的闹铃，提前1小时叫我", "设置明天下午1点开会的闹铃，提前两个小时叫我", "设置明天下午1点开会的闹铃，提前两小时叫我", "每天早5点提醒起床",};
         TimeEntityRecognizer timeEntityRecognizer = new TimeEntityRecognizer();
         TimeNormalizer normalizer = new TimeNormalizer();
         for (String txt : texts) {
