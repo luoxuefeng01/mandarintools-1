@@ -45,7 +45,8 @@ public class TimeRecognitionTest {
         TimeZone chinaTimeZone = TimeZone.getTimeZone("Asia/Shanghai");
 
         TimeEntityRecognizer timeEntityRecognizer = new TimeEntityRecognizer();
-        String[] texts = {"早上四点三十分", "早上四点半", "2个小时后", "两个小时以后", "两小时后", "帮我设置一下下周五", "15分钟后", "一小时后", "四点半", "一天后", "明天下午两点",
+        String[] texts = {"早上四点三十", "5点到我这里来", "四点三十", "今天中午一点", "早上四点三十", "早上四点三十分", "早上四点半", "2个小时后", "两个小时以后", "两小时后",
+                "帮我设置一下下周五", "15分钟后", "一小时后", "四点半", "一天后", "明天下午两点",
                 "六月三号", "六月三日", "5月18日", "5月18号", "大前天", "大大前天", "上上周日", "六月十五日", "1972年", "80年", "今天", "去年", "1997年", "今晚", "今年", "最近两三年", "Hi，all.下午三点开会",
                 "周一开会", "早上六点起床", "下下周一开会"};
         TimeNormalizer normalizer = new TimeNormalizer();
@@ -229,7 +230,7 @@ public class TimeRecognitionTest {
     }
 
 
-    //    @Test
+    @Test
     public void testMultiPattern() throws IOException {
         InputStream in = TimeRecognitionTest.class.getResourceAsStream("/time.regex");
         List<String> regexList = IOUtils.readLines(in, "UTF-8").stream().map(StringUtils::stripToNull)
@@ -245,7 +246,7 @@ public class TimeRecognitionTest {
         LOGGER.info("multi pattern searcher initialized for {} patterns, time used(s):{}", regexList.size(),
                 (end - start) / 1000.0);
         //"四点半", "15分钟后"
-        String text = "四点半";
+        String text = "早上四点三十";
         MultiPatternSearcher.Cursor cursor = searcher.search(text);
         while (cursor.next()) {
             int pattern = cursor.match();

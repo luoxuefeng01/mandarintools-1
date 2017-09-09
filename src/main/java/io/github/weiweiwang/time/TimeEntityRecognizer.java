@@ -100,6 +100,18 @@ public class TimeEntityRecognizer {
                 iterator.remove();
             }
         }
+        //double check time start and end, 比如5点到我这里来，5点会被设置为start=true，需要纠正过来
+        iterator = result.iterator();
+        TimeEntity prev = null;
+        while (iterator.hasNext()) {
+            TimeEntity timeEntity = iterator.next();
+            if (timeEntity.isEnd() && prev == null) {
+                timeEntity.setEnd(false);
+            } else if (timeEntity.isStart() && !iterator.hasNext()) {
+                timeEntity.setStart(false);
+            }
+            prev = timeEntity;
+        }
         return result;
     }
 
@@ -164,7 +176,7 @@ public class TimeEntityRecognizer {
         if (!validTime(arr)) {
             return null;
         }
-        normalize(arr, timeZone, relative, isDefaultRelative);
+        normalize(text, arr, timeZone, relative, isDefaultRelative);
         Calendar calendar = Calendar.getInstance(timeZone);
         calendar.clear();
         final int[] fields = {Calendar.YEAR, Calendar.MONTH, Calendar.DAY_OF_MONTH, Calendar.HOUR_OF_DAY, Calendar
@@ -191,7 +203,10 @@ public class TimeEntityRecognizer {
      * @param arr
      * @param relative
      */
-    private void normalize(int[] arr, TimeZone timeZone, Date relative, boolean isDefaultRelative) {
+
+    private static final Pattern TIME_MODIFIER_PATTERN = Pattern.compile("(早|早晨|早上|上午|中午|午后|下午|晚上|晚间|夜里|夜|凌晨|深夜|pm|PM)");
+
+    private void normalize(String text, int[] arr, TimeZone timeZone, Date relative, boolean isDefaultRelative) {
         int j = 0;
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] >= 0) {
@@ -202,7 +217,9 @@ public class TimeEntityRecognizer {
         Calendar calender = Calendar.getInstance(timeZone);
 
         //如果没有相对日期约束，时间又是过去的时间，设置为最近的一个未来时间
-        if (isDefaultRelative && arr[2] < 0 && arr[3] < calender.get(Calendar.HOUR_OF_DAY)) {
+        //TODO 考虑是否要调整代码到parseHour中
+        Matcher matcher = TIME_MODIFIER_PATTERN.matcher(text);
+        if (!matcher.find() && isDefaultRelative && arr[2] < 0 && arr[3] < calender.get(Calendar.HOUR_OF_DAY)) {
             arr[3] += 12;
         }
 

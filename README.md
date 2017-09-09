@@ -1,5 +1,8 @@
 # 更新历史
 
+## v1.1.5
+fix bug for: 早上四点三十(不识别，并且normalize到下午了)，5点到我这里来(5点识别成start time了）
+
 ## v1.1.4
 fix bug for: 早上四点三十分，早上四点半， add timezone support
 
