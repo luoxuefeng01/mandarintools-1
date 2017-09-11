@@ -114,8 +114,13 @@ public class TimeEntityRecognizer {
                 timeEntity.setStart(false);
             }
             //每月三号上午8点到10点,对于这样的时间cycle，修正10点这个实体不带cycle属性的问题
-            if (timeEntity.isEnd() && prev != null && prev.getCycle() != null && timeEntity.getCycle() == null) {
-                timeEntity.setCycle(prev.getCycle());
+            if (timeEntity.isEnd() && prev != null) {
+                if (prev.getCycle() != null && timeEntity.getCycle() == null) {
+                    timeEntity.setCycle(prev.getCycle());
+                }
+                if (prev.getValue().getTime() > timeEntity.getValue().getTime()) {
+                    timeEntity.setValue(new Date(timeEntity.getValue().getTime() + 12 * 60 * 60 * 1000));
+                }
             }
             prev = timeEntity;
         }
@@ -124,6 +129,7 @@ public class TimeEntityRecognizer {
 
     /**
      * 参考了StringPreHandlingModule, 将中文表达的日期、时间转化为数字表达
+     *
      * @param text
      * @return
      */
