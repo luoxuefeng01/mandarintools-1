@@ -68,6 +68,9 @@ public class TimeEntityRecognizer {
         List<TimeEntity> result = new ArrayList<>();
         int offset;
         Matcher match = pattern.matcher(text);
+        /**
+         * 匹配时间信息，连续的时间信息merge到一个实体中
+         */
         while (match.find()) {
             TimeEntity lastEntity = result.isEmpty() ? null : result.get(result.size() - 1);
             offset = match.start();
@@ -83,11 +86,11 @@ public class TimeEntityRecognizer {
         Date lastRelative = relative;
         while (iterator.hasNext()) {
             TimeEntity timeEntity = iterator.next();
-
             Date date = parseTime(timeEntity.getOriginal(), timeZone, lastRelative, lastRelative.equals(relative),
                     timeEntity);
             if (null != date) {
                 lastRelative = date;
+                //识别时间循环，放到这里因为要考虑实体字符串的上下文，而时间实体中只是有识别出的时间字符串，缺乏上下文信息
                 offset = timeEntity.getOffset();
                 if (offset > 1 && text.charAt(offset - 1) == '到') {
                     timeEntity.setStart(false);
@@ -110,13 +113,26 @@ public class TimeEntityRecognizer {
             } else if (timeEntity.isStart() && !iterator.hasNext()) {
                 timeEntity.setStart(false);
             }
+            //每月三号上午8点到10点,对于这样的时间cycle，修正10点这个实体不带cycle属性的问题
+            if (timeEntity.isEnd() && prev != null && prev.getCycle() != null && timeEntity.getCycle() == null) {
+                timeEntity.setCycle(prev.getCycle());
+            }
             prev = timeEntity;
         }
         return result;
     }
 
+    /**
+     * 参考了StringPreHandlingModule, 将中文表达的日期、时间转化为数字表达
+     * @param text
+     * @return
+     */
     private String normalizeTimeString(String text) {
         text = text.replace("周日", "周7").replace("：", ":");
+        text = text.replace("周天", "周7");
+        text = text.replace("星期日", "星期7");
+        text = text.replace("星期天", "星期7");
+
         Pattern p = Pattern.compile("[一二两三四五六七八九十]+");
         Matcher m = p.matcher(text);
         StringBuffer sb = new StringBuffer();
@@ -172,7 +188,6 @@ public class TimeEntityRecognizer {
         overallParse(text, arr);
         parseRelative(text, timeZone, relative, arr);
         parseCurrentRelative(text, timeZone, relative, arr);
-
         if (!validTime(arr)) {
             return null;
         }
@@ -204,8 +219,17 @@ public class TimeEntityRecognizer {
      * @param relative
      */
 
-    private static final Pattern TIME_MODIFIER_PATTERN = Pattern.compile("(早|早晨|早上|上午|中午|午后|下午|晚上|晚间|夜里|夜|凌晨|深夜|pm|PM)");
+    private static final Pattern TIME_MODIFIER_PATTERN = Pattern.compile("(早|早晨|早上|上午|中午|午后|下午|傍晚|晚上|晚间|夜里|夜|凌晨|深夜|pm|PM)");
 
+    /**
+     * 对于arr数组中头部==-1的元素，用相对时间替换，同时对于当天已经是过去的时间表达，偏移到当天12小时之后
+     *
+     * @param text
+     * @param arr
+     * @param timeZone
+     * @param relative
+     * @param isDefaultRelative
+     */
     private void normalize(String text, int[] arr, TimeZone timeZone, Date relative, boolean isDefaultRelative) {
         int j = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -216,10 +240,10 @@ public class TimeEntityRecognizer {
         }
         Calendar calender = Calendar.getInstance(timeZone);
 
-        //如果没有相对日期约束，时间又是过去的时间，设置为最近的一个未来时间
-        //TODO 考虑是否要调整代码到parseHour中
+        //如果没有相对日期约束，时间又是过去的时间，并且当前识别的hour<=12, 设置为当天最近的一个未来时间
         Matcher matcher = TIME_MODIFIER_PATTERN.matcher(text);
-        if (!matcher.find() && isDefaultRelative && arr[2] < 0 && arr[3] < calender.get(Calendar.HOUR_OF_DAY)) {
+        if (!matcher.find() && isDefaultRelative && arr[2] < 0 && arr[3] < calender.get(Calendar.HOUR_OF_DAY) &&
+                arr[3] <= 12) {
             arr[3] += 12;
         }
 
@@ -251,7 +275,7 @@ public class TimeEntityRecognizer {
             year = Integer.parseInt(match.group());
         } else {
             match = YEAR_2_DIGIT_PATTERN.matcher(text);
-            if (match.find()) {
+            if (match.find()) {//注意这里逻辑上是不严格的，更多是从当前时间节点上大家的输入习惯
                 year = Integer.parseInt(match.group());
                 if (year >= 0 && year < 100) {
                     if (year < 30) {
@@ -295,11 +319,25 @@ public class TimeEntityRecognizer {
 
 
     private static final Pattern HOUR_PATTERN = Pattern.compile("(?<!(周|星期))([0-2]?[0-9])(?=(点|时))");//(?<!(周|星期))([0-2]?[0-9])(?=(点|时))
+    private static final Pattern EARLY_MORNING_PATTERN = Pattern.compile("凌晨");
+    private static final Pattern MORNING_PATTERN = Pattern.compile("(早上|早晨)");
     private static final Pattern NOON_PATTERN = Pattern.compile("(中午)|(午间)");
     private static final Pattern AFTERNOON_PATTERN = Pattern.compile("(下午)|(午后)|(pm)|(PM)");
-    private static final Pattern NIGHT_PATTERN = Pattern.compile("晚");
+    private static final Pattern EVENING_PATTERN = Pattern.compile("(傍晚)");
+    private static final Pattern NIGHT_PATTERN = Pattern.compile("(?<!傍)晚");
+
+//    private static final Pattern NOON_PATTERN=Pattern.compile("中午(?![1-3]+点)");
+//    private static final Pattern AFTER_NOON_NOON_PATTERN=Pattern.compile("中午(?![1-3]+点)");
+
 
     /**
+     * 凌晨：0-5
+     * 早上：5-11
+     * 中午：11-13
+     * 下午：13-17
+     * 傍晚：17-19
+     * 晚上：19-24
+     *
      * @param text
      * @return
      */
@@ -314,6 +352,19 @@ public class TimeEntityRecognizer {
         if (match.find()) {
             hour = Integer.parseInt(match.group());
         }
+        match = EARLY_MORNING_PATTERN.matcher(text);
+        if (match.find()) {
+            if (hour < 0) {
+                hour = 1;
+            }
+        }
+
+        match = MORNING_PATTERN.matcher(text);
+        if (match.find()) {
+            if (hour < 0) {
+                hour = 6;
+            }
+        }
         /*
          * 对关键字：中午,午间,下午,午后,晚上,傍晚,晚间,晚,pm,PM的正确24小时时间计算
 		 * 规约：
@@ -326,22 +377,40 @@ public class TimeEntityRecognizer {
 		 */
         match = NOON_PATTERN.matcher(text);
         if (match.find()) {
-            if (hour >= 0 && hour <= 10)
+            if (hour >= 0 && hour <= 10) {
                 hour += 12;
+            } else if (hour < 0) {
+                hour = 12;
+            }
         }
 
         match = AFTERNOON_PATTERN.matcher(text);
         if (match.find()) {
-            if (hour >= 0 && hour <= 11)
+            if (hour >= 0 && hour <= 11) {
                 hour += 12;
+            } else if (hour < 1) {
+                hour = 14;
+            }
         }
 
-        match = NIGHT_PATTERN.matcher(text);
+        match = EVENING_PATTERN.matcher(text);
         if (match.find()) {
-            if (hour >= 1 && hour <= 11)
+            if (hour > 0 && hour < 11) {
                 hour += 12;
-            else if (hour == 12)
-                hour += 12;
+            } else if (hour < 1) {
+                hour = 18;
+            }
+        } else {
+            match = NIGHT_PATTERN.matcher(text);
+            if (match.find()) {
+                if (hour >= 1 && hour <= 11) {
+                    hour += 12;
+                } else if (hour == 12) {
+                    hour += 12;
+                } else if (hour < 0) {
+                    hour = 20;
+                }
+            }
         }
         return hour;
     }

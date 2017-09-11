@@ -37,15 +37,15 @@ public class TimeRecognitionTest {
 
     @Test
     public void testTimeZone() throws IOException {
-        Arrays.stream(TimeZone.getAvailableIDs()).forEach(item -> {
-            LOGGER.info("timezone:{}", item);
-        });
+//        Arrays.stream(TimeZone.getAvailableIDs()).forEach(item -> {
+//            LOGGER.info("timezone:{}", item);
+//        });
 
-        TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
+//        TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
         TimeZone chinaTimeZone = TimeZone.getTimeZone("Asia/Shanghai");
 
         TimeEntityRecognizer timeEntityRecognizer = new TimeEntityRecognizer();
-        String[] texts = {"早上四点三十", "5点到我这里来", "四点三十", "今天中午一点", "早上四点三十", "早上四点三十分", "早上四点半", "2个小时后", "两个小时以后", "两小时后",
+        String[] texts = {"每月三号上午8点到10点", "15点", "早晨3点", "凌晨", "早上", "中午", "下午", "傍晚", "早上2点", "傍晚7点", "晚上9点", "下午4点", "星期六", "星期天", "早上四点三十", "5点到我这里来", "四点三十", "今天中午一点", "早上四点三十", "早上四点三十分", "早上四点半", "2个小时后", "两个小时以后", "两小时后",
                 "帮我设置一下下周五", "15分钟后", "一小时后", "四点半", "一天后", "明天下午两点",
                 "六月三号", "六月三日", "5月18日", "5月18号", "大前天", "大大前天", "上上周日", "六月十五日", "1972年", "80年", "今天", "去年", "1997年", "今晚", "今年", "最近两三年", "Hi，all.下午三点开会",
                 "周一开会", "早上六点起床", "下下周一开会"};
