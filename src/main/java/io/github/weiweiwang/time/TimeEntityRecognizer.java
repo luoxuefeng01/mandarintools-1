@@ -327,6 +327,7 @@ public class TimeEntityRecognizer {
     private static final Pattern HOUR_PATTERN = Pattern.compile("(?<!(周|星期))([0-2]?[0-9])(?=(点|时))");//(?<!(周|星期))([0-2]?[0-9])(?=(点|时))
     private static final Pattern EARLY_MORNING_PATTERN = Pattern.compile("凌晨");
     private static final Pattern MORNING_PATTERN = Pattern.compile("(早上|早晨)");
+    private static final Pattern FORENOON_PATTERN = Pattern.compile("(上午)|(am)|(AM)");
     private static final Pattern NOON_PATTERN = Pattern.compile("(中午)|(午间)");
     private static final Pattern AFTERNOON_PATTERN = Pattern.compile("(下午)|(午后)|(pm)|(PM)");
     private static final Pattern EVENING_PATTERN = Pattern.compile("(傍晚)");
@@ -369,6 +370,12 @@ public class TimeEntityRecognizer {
         if (match.find()) {
             if (hour < 0) {
                 hour = 6;
+            }
+        }
+        match = FORENOON_PATTERN.matcher(text);
+        if (match.find()) {
+            if (hour < 0) {
+                hour = 9;
             }
         }
         /*
